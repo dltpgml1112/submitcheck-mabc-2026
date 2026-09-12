@@ -1,4 +1,4 @@
 # 프로젝트 스킬 디렉터리는 커밋하지 않음
 
-# skill-to-service 킷은 커밋하지 않음
-.hermes/skills/skill-to-service/
+# .hermes 내부 파일(마지막 프롬프트 등) 커밋 제외
+.hermes/
