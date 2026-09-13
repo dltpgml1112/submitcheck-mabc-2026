@@ -2,3 +2,32 @@
 
 # .hermes 내부 파일(마지막 프롬프트 등) 커밋 제외
 .hermes/
+
+# 로컬 서버 로그
+local-server.log
+
+# Attio 측정 잔여 파일 (재측정용 스크립트·결과, 비공개 작업 흔적)
+_measure.js
+_measure.cjs
+_measure_attio.cjs
+_measure_attio2.cjs
+_measure_attio_final.cjs
+_measure_result.json
+_attio_measure_final.json
+
+# 이전 시안(구 버전, 검토 후 버림)
+index-landing-v1.html
+index-landing-v2.html
+index-landing-v4.html
+index-product-v1.html
+index-product-v2-warp.html
+index-product-v3-warp-rewrite.html
+index-redesign-v1-dashboard.html
+index-redesign-v2-journey.html
+index-redesign-v3-report.html
+index-screen-scene.html
+index-v1-dark-glass.html
+index-v2-light-minimal.html
+index-v3-mono-terminal.html
+index-v4-compact-dashboard.html
+index-v5-editorial-warm.html
