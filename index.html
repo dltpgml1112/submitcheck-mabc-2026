@@ -1,143 +1,770 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ko">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>SubmitCheck — 제출 전 필수요건 점검</title>
+<title>SubmitCheck — 제출 직전, 놓친 걸 한 번에</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;650;680&family=Noto+Sans+KR:wght@400;500;600;650;700&display=swap" rel="stylesheet">
 <style>
-  :root{
-    --bg:#0b0d12; --panel:#14171f; --border:#232833; --muted:#8b93a7;
-    --ink:#eef1f6; --ok:#36d399; --warn:#fbbf24; --bad:#f87171; --info:#60a5fa;
-    --accent:#7c8dff;
-  }
-  *{box-sizing:border-box}
-  html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);
-    font-family:Inter, system-ui, -apple-system, "Noto Sans", "Malgun Gothic", sans-serif;
-    font-size:15px; line-height:1.55}
-  a{color:var(--info)}
-  .wrap{max-width:820px;margin:0 auto;padding:28px 22px 64px}
-  header{margin-bottom:22px}
-  h1{font-size:22px;margin:0 0 6px;font-weight:650;letter-spacing:-.2px}
-  .sub{color:var(--muted);font-size:13.5px}
-  .card{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:18px}
-  .input-row{display:flex;flex-direction:column;gap:14px}
-  label{display:block;font-size:13px;font-weight:600;margin-bottom:6px}
-  textarea{width:100%;min-height:138px;background:#0c0f15;border:1px solid var(--border);
-    color:var(--ink);border-radius:10px;padding:12px 13px;font:inherit;font-size:14px;
-    resize:vertical}
-  textarea::placeholder{color:#5b6478}
-  .row{display:flex;gap:12px;align-items:stretch}
-  .row > .card{flex:1}
-  .btn-row{display:flex;gap:12px;margin-top:14px;flex-wrap:wrap}
-  button{flex:1;cursor:pointer;border:none;border-radius:10px;padding:12px 16px;font:inherit;
-    font-weight:600;font-size:15px;transition:transform .05s, background .15s}
-  button:active{transform:translateY(1px)}
-  .primary{background:linear-gradient(180deg,#4f5bd5,#3a45b8);color:#fff}
-  .primary:hover{background:linear-gradient(180deg,#5a66e6,#4351c4)}
-  .secondary{background:#1b1f2a;color:var(--ink);border:1px solid var(--border)}
-  .secondary:hover{background:#222734}
-  button:disabled{opacity:.45;cursor:not-allowed}
-  .status{display:flex;gap:10px;align-items:center;margin:10px 0 6px;min-height:24px}
-  .badge{flex:0 0 auto;padding:4px 10px;border-radius:999px;font-size:12.5px;font-weight:600;
-    border:1px solid transparent}
-  .badge.ok{background:#06211c;color:var(--ok);border-color:#0a3a2c}
-  .badge.review{background:#2a2106;color:var(--warn);border-color:#3d3209}
-  .badge.blocked{background:#2a0a0a;color:var(--bad);border-color:#3d1212}
-  .badge.insufficient{background:#1a1a2a;color:#9aa3c0;border-color:#2a2a3d}
-  .badge.idle{background:#131722;color:var(--muted);border-color:#262b38}
-  .lead{display:flex;gap:10px;align-items:flex-start;margin-top:8px}
-  .lead .mark{flex:0 0 auto;width:10px;height:10px;border-radius:50%;margin-top:5px;background:var(--muted)}
-  .lead.ok .mark{background:var(--ok)} .lead.review .mark{background:var(--warn)}
-  .lead.blocked .mark{background:var(--bad)} .lead.insufficient .mark{background:#9aa3c0}
-  .lead .txt{font-size:14.5px}
-  .lead .head{font-weight:650;margin-bottom:3px}
-  .lead .sub2{color:var(--muted);font-size:13.5px}
-  .actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
-  .chip{background:#10141c;border:1px solid var(--border);border-radius:8px;padding:7px 10px;
-    font-size:13px;color:var(--muted);cursor:pointer;transition:background .12s,color .12s}
-  .chip:hover{background:#161b26;color:var(--ink)}
-  .chip.active{background:#1c2230;color:var(--ink);border-color:#2f3645}
-  .pill{font-size:12.5px;padding:2px 8px;border-radius:999px;background:#1b2030;color:#c2c8d8;
-    border:1px solid #2a3145}
-  .pill.bad{color:var(--bad);background:#2a1111;border-color:#3d1818}
-  .pill.warn{color:var(--warn);background:#2a2106;border-color:#3d3209}
-  .pill.ok{color:var(--ok);background:#06211c;border-color:#0a3a2c}
-  .pill.info{color:#9aa3c0;background:#131722;border-color:#262b38}
-  .bar{height:1px;background:var(--border);margin:14px 0}
-  .detail{max-height:0;overflow:hidden;transition:max-height .25s ease}
-  .detail.on{max-height:1400px}
-  .matrix{width:100%;border-collapse:collapse;font-size:12.8px}
-  .matrix th,.matrix td{text-align:left;padding:7px 9px;border-bottom:1px solid #20252f}
-  .matrix th{font-weight:600;color:var(--muted);font-size:11.8px;text-transform:uppercase;letter-spacing:.3px}
-  .matrix td.cur{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:11.6px}
-  .matrix tr.totals td{background:#10141c;font-weight:600;color:var(--ink)}
-  .pillrow{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0 2px}
-  .fullbg{background:#0c0f15;border-radius:8px;padding:12px}
-  .foot{margin-top:26px;color:var(--muted);font-size:12.5px;border-top:1px solid var(--border);
-    padding-top:12px}
-  .loading{animation:spin 1s linear infinite}
-  @keyframes spin{to{transform:rotate(360deg)}}
-  .disclaimer{font-size:12.5px;color:var(--muted);background:#10141c;border:1px solid var(--border);
-    border-radius:8px;padding:10px 12px;margin-top:14px}
-  .line-clamp{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+:root{
+  --bg-gradient:linear-gradient(160deg,#ffffff 0%,#f5f9ff 50%,#f0ecfc 100%);
+  --ink:#061226; --ink-2:#2b3a58; --muted:#6b7790;
+  --line:#e2e8f3; --line-soft:#eef1f9;
+  --panel:#ffffff; --panel-2:#fbfcff;
+  --accent:#2a5fd9; --accent-deep:#1e40af;
+  --accent-soft:#e9f0fc; --accent-ink:#1c4bb3;
+  --pass:#1c7a4a; --pass-bg:#eaf4ee; --pass-line:#cfe6d8;
+  --warn:#9a6411; --warn-bg:#faf1e0; --warn-line:#ecd3a4;
+  --fail:#a8231c; --fail-bg:#fbe7e4; --fail-line:#e9c6c0;
+  --error-bg:#fce4ec;
+  --shadow-sm:0 1px 3px rgba(6,18,38,.04);
+  --shadow:0 4px 10px rgba(6,18,38,.05),0 20px 40px rgba(6,18,38,.08);
+  --shadow-lg:0 8px 24px rgba(30,64,175,.10),0 20px 60px rgba(6,18,38,.12);
+  --shadow-glass:0 8px 32px rgba(30,64,175,.12),0 2px 8px rgba(0,0,0,.04);
+  --radius:18px; --radius-lg:22px; --radius-sm:10px; --radius-pill:999px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;background:var(--bg-gradient);color:var(--ink);
+  font-family:Inter,"Noto Sans KR","Malgun Gothic","Apple SD Gothic Neo",system-ui,sans-serif;
+  font-size:15px;line-height:1.6;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+
+/* ========== 배경 광원 ========== */
+.bg-orbs{position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:0;
+  mask-image:radial-gradient(circle at 50% 38%,black 30%,transparent 72%)}
+.bg-orbs .orb{position:absolute;border-radius:50%;filter:blur(70px);opacity:.55}
+.bg-orbs .orb.a{width:620px;height:620px;top:-180px;left:18%;
+  background:radial-gradient(circle at 35% 35%,rgb(79,110,247) 0%,rgb(154,169,214) 45%,transparent 75%)}
+.bg-orbs .orb.b{width:560px;height:560px;bottom:-140px;right:8%;
+  background:radial-gradient(circle at 45% 45%,rgb(155,123,255) 0%,rgb(195,182,245) 45%,transparent 75%)}
+
+/* ========== 레이아웃 ========== */
+.main{position:relative;z-index:1}
+.wrap{max-width:1180px;margin:0 auto;padding:0 40px}
+
+/* ========== 헤더 ========== */
+.header{position:sticky;top:0;z-index:50;background:rgba(255,255,255,.72);
+  backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  border-bottom:1px solid var(--line-soft)}
+.header-inner{max-width:1180px;margin:0 auto;padding:0 40px;display:flex;align-items:center;
+  gap:24px;height:68px}
+.header-logo{display:flex;align-items:center;gap:10px;font-weight:700;font-size:18px;
+  letter-spacing:-.02em}
+.logo-mark{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;
+  border-radius:9px;background:var(--accent);color:#fff;font-size:14px;font-weight:700;
+  box-shadow:rgba(30,64,175,.25) 0 2px 8px}
+.header-nav{display:flex;gap:32px;margin:auto}
+.header-nav a{font-size:14.5px;font-weight:500;color:var(--ink-2);transition:color .15s}
+.header-nav a:hover{color:var(--accent)}
+.header-actions{display:flex;align-items:center;gap:10px;margin-left:auto}
+.btn-ghost-sm{display:inline-flex;align-items:center;justify-content:center;
+  padding:9px 16px;border-radius:10px;font:inherit;font-weight:550;font-size:14px;
+  color:var(--ink);border:1px solid var(--line);background:transparent;transition:all .15s}
+.btn-ghost-sm:hover{background:var(--bg-gradient);border-color:rgb(195,206,228)}
+.btn-primary-sm{display:inline-flex;align-items:center;justify-content:center;
+  padding:9px 20px;border-radius:10px;font:inherit;font-weight:600;font-size:14px;
+  background:var(--accent);color:#fff;border:1px solid transparent;
+  box-shadow:0 2px 6px rgba(30,64,175,.22),0 8px 20px rgba(30,64,175,.10);
+  transition:all .15s}
+.btn-primary-sm:hover{background:var(--accent-deep);box-shadow:rgba(30,64,175,.34) 0 4px 14px}
+
+/* ========== 히어로 ========== */
+.hero{position:relative;display:grid;grid-template-columns:1fr 1fr;gap:64px;
+  align-items:center;padding:80px 0 72px}
+.hero-text{}
+
+.eyebrow{display:inline-block;font-size:12.5px;font-weight:600;letter-spacing:.18em;
+  text-transform:uppercase;color:var(--muted);margin-bottom:24px;
+  padding:7px 16px;background:var(--accent-soft);border:1px solid rgb(205,218,240);
+  border-radius:999px}
+.eyebrow .pip{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--accent);
+  box-shadow:rgba(37,99,168,.20) 0 0 0 3px;margin-right:10px;vertical-align:middle}
+
+h1.hero-title{font-size:clamp(40px,5.5vw,58px);font-weight:700;letter-spacing:-.028em;
+  line-height:1.12;margin:0 0 22px;color:var(--ink);white-space:pre-line}
+h1.hero-title .accent{color:var(--accent-deep);font-weight:700}
+
+.hero-body{color:var(--ink-2);font-size:17px;line-height:1.7;max-width:460px;margin:0 0 32px}
+.hero-body strong{font-weight:600;color:var(--ink)}
+
+.hero-cta{display:flex;gap:14px;flex-wrap:wrap;align-items:center;margin-bottom:18px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:9px;cursor:pointer;
+  border:none;border-radius:11px;padding:14px 24px;font:inherit;font-weight:600;font-size:15.5px;
+  line-height:1;transition:transform .05s,box-shadow .15s,background .15s,border-color .15s;
+  white-space:nowrap}
+.btn:active{transform:translateY(1px)}
+.btn-primary{background:var(--accent);color:#fff;
+  box-shadow:0 2px 6px rgba(30,64,175,.22),0 8px 20px rgba(30,64,175,.10)}
+.btn-primary:hover{background:var(--accent-deep);
+  box-shadow:rgba(30,64,175,.34) 0 4px 14px}
+.btn-secondary{background:transparent;color:var(--ink);border:1px solid var(--line)}
+.btn-secondary:hover{background:var(--bg-gradient);border-color:rgb(195,206,228)}
+.btn-ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
+.btn-ghost:hover{background:var(--bg-gradient);border-color:rgb(195,206,228)}
+
+.hero-caption{font-size:13.5px;color:var(--muted);margin:0;letter-spacing:-.01em}
+
+/* ========== 히어로 3D 비주얼 ========== */
+.hero-visual{position:relative;height:480px;display:flex;align-items:center;justify-content:center}
+.scene{position:relative;width:100%;height:100%;display:flex;align-items:center;
+  justify-content:center;perspective:1000px;transform-style:preserve-3d}
+
+.glass-panel{position:absolute;border-radius:18px;
+  background:rgba(255,255,255,.55);backdrop-filter:blur(12px);
+  -webkit-backdrop-filter:blur(12px);
+  border:1px solid rgba(255,255,255,.4);
+  box-shadow:var(--shadow-glass);
+  overflow:hidden;transform-style:preserve-3d}
+
+.glass-panel.central{width:90px;height:300px;
+  transform:translateZ(40px);
+  background:linear-gradient(135deg,rgba(42,95,217,.12) 0%,rgba(255,255,255,.55) 50%,
+    rgba(42,95,217,.06) 100%);
+  box-shadow:0 8px 40px rgba(30,64,175,.18),0 2px 8px rgba(0,0,0,.04),
+    0 0 60px rgba(42,95,217,.08)}
+.glass-panel.central::before{content:"";position:absolute;inset:0;border-radius:18px;
+  background:linear-gradient(135deg,rgba(255,255,255,.5) 0%,transparent 50%);
+  pointer-events:none}
+.glass-panel.central .panel-content{position:relative;z-index:1;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  height:100%;padding:16px;text-align:center}
+.sc-logo{position:relative;display:inline-flex;align-items:center;justify-content:center;
+  width:54px;height:54px;border-radius:12px;background:var(--accent);
+  color:#fff;font-size:22px;font-weight:700;letter-spacing:-.02em;
+  box-shadow:rgba(30,64,175,.30) 0 4px 12px;margin-bottom:10px}
+.sc-logo::after{content:"";position:absolute;inset:0;border-radius:12px;
+  background:linear-gradient(135deg,rgba(255,255,255,.3) 0%,transparent 60%)}
+.panel-sub{font-size:9.5px;font-weight:600;letter-spacing:.12em;color:var(--ink-2);
+  line-height:1.5;text-transform:uppercase;white-space:pre-line}
+
+.glass-panel.left{left:8%;bottom:4%;
+  transform:rotateY(-10deg) rotateX(4deg) translateZ(10px);
+  width:230px;height:248px;
+  background:rgba(255,255,255,.52);
+  box-shadow:0 8px 32px rgba(30,64,175,.10),0 2px 8px rgba(0,0,0,.03)}
+.glass-panel.right{right:8%;bottom:4%;
+  transform:rotateY(10deg) rotateX(-4deg) translateZ(10px);
+  width:230px;height:248px;
+  background:rgba(255,255,255,.52);
+  box-shadow:0 8px 32px rgba(30,64,175,.10),0 2px 8px rgba(0,0,0,.03)}
+
+.card-header{display:flex;align-items:center;justify-content:space-between;
+  padding:14px 18px;border-bottom:1px solid rgba(255,255,255,.3);
+  background:rgba(255,255,255,.25)}
+.card-title{font-size:13px;font-weight:650;color:var(--ink);letter-spacing:-.01em}
+.card-badge{font-size:11px;font-weight:600;color:var(--muted);
+  padding:3px 10px;border-radius:999px;background:rgba(255,255,255,.4);
+  border:1px solid rgba(255,255,255,.3)}
+
+.card-checklist{padding:12px 18px;display:flex;flex-direction:column;gap:8px}
+.check-item{display:flex;align-items:center;gap:10px;font-size:13px;font-weight:550;
+  color:var(--ink-2)}
+.check-mark{width:18px;height:18px;border-radius:50%;background:var(--pass);
+  color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;
+  flex:0 0 auto;box-shadow:rgba(28,122,74,.20) 0 0 0 3px}
+.card-files{padding:12px 18px;display:flex;flex-direction:column;gap:9px}
+.file-item{display:flex;align-items:center;gap:10px;font-size:13px;font-weight:500;
+  color:var(--ink-2)}
+.file-status{width:12px;height:12px;border-radius:50%;flex:0 0 auto}
+.file-status.pass{background:var(--pass);box-shadow:rgba(28,122,74,.18) 0 0 0 3px}
+.file-status.warn{background:var(--warn);box-shadow:rgba(154,100,17,.18) 0 0 0 3px}
+.file-status.fail{background:var(--fail);box-shadow:rgba(168,35,28,.18) 0 0 0 3px}
+
+.light{position:absolute;border-radius:50%;filter:blur(56px);pointer-events:none;opacity:.35}
+.light.a{width:360px;height:360px;top:-100px;left:6%;
+  background:radial-gradient(circle at 35% 35%,rgb(79,110,247) 0%,rgb(154,169,214) 45%,transparent 75%)}
+.light.b{width:280px;height:280px;bottom:-80px;right:2%;
+  background:radial-gradient(circle,rgb(155,123,255) 0%,rgb(195,182,245) 45%,transparent 75%)}
+
+/* ========== 통계 스트립 ========== */
+.stats-strip{max-width:1180px;margin:0 auto;padding:0 40px;
+  display:flex;align-items:center;gap:0;margin-top:0;margin-bottom:0}
+.stat-display{flex:1;display:flex;flex-direction:column;align-items:center;
+  padding:28px 24px;background:var(--panel);border:1px solid var(--line);
+  border-radius:16px;box-shadow:var(--shadow-sm);text-align:center}
+.stat-num{font-size:36px;font-weight:700;letter-spacing:-.02em;color:var(--ink);line-height:1.1}
+.stat-label{font-size:12.5px;font-weight:500;color:var(--muted);margin-top:6px;
+  letter-spacing:.02em}
+.stat-divider{width:1px;height:52px;background:var(--line);margin:0 12px;
+  align-self:stretch}
+
+/* ========== 분석 섹션 (입력) ========== */
+.analyze-section{padding:64px 0 48px}
+.section-inner{max-width:1180px;margin:0 auto;padding:0 40px}
+.section-header{max-width:680px;margin-bottom:28px}
+.section-eyebrow{display:block;font-size:11.5px;font-weight:600;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--muted);margin-bottom:10px}
+.section-title{font-size:26px;font-weight:650;letter-spacing:-.015em;line-height:1.35;
+  margin:0;color:var(--ink)}
+
+.input-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:22px}
+.input-card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+  padding:20px 22px;box-shadow:var(--shadow-sm)}
+.input-label{display:block;font-size:13px;font-weight:600;margin-bottom:10px;color:var(--ink-2);
+  letter-spacing:-.01em}
+.input-textarea{width:100%;min-height:210px;background:#f8faff;border:1px solid var(--line);
+  color:var(--ink);border-radius:10px;padding:14px 16px;font:inherit;font-size:14.5px;
+  line-height:1.6;resize:vertical;transition:border-color .15s,box-shadow .15s}
+.input-textarea:focus{outline:none;border-color:var(--accent);
+  box-shadow:0 0 0 3px var(--accent-soft)}
+.input-textarea::placeholder{color:#9aa8c0}
+
+.input-actions{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+
+/* ========== 대시보드 ========== */
+.dashboard-section{padding:0 0 64px}
+.dashboard{display:none;grid-template-columns:160px 1fr 320px;gap:0;
+  max-width:1180px;margin:0 auto;padding:0 0 0;background:var(--panel);
+  border:1px solid var(--line);border-radius:22px;box-shadow:var(--shadow-lg);
+  overflow:hidden;margin-top:0}
+.dash-sidebar{background:var(--bg-gradient);border-right:1px solid var(--line-soft);
+  padding:24px 16px;display:flex;flex-direction:column;gap:4px}
+.sidebar-logo{padding:8px 10px 18px}
+.sidebar-logo .logo-mark{width:36px;height:36px;font-size:15px}
+.sidebar-nav{display:flex;flex-direction:column;gap:2px}
+.sidebar-item{display:flex;align-items:center;gap:10px;padding:10px 12px;
+  border-radius:10px;font-size:13.5px;font-weight:550;color:var(--ink-2);
+  transition:background .12s,color .12s;text-decoration:none}
+.sidebar-item:hover{background:rgba(42,95,217,.06);color:var(--ink)}
+.sidebar-item.active{background:var(--accent-soft);color:var(--accent-ink);
+  box-shadow:inset 3px 0 0 var(--accent)}
+.sidebar-icon{display:inline-flex;align-items:center;justify-content:center;
+  width:22px;height:22px;border-radius:6px;font-size:12px;font-weight:650;
+  background:var(--panel);border:1px solid var(--line);color:var(--muted);
+  transition:all .15s}
+.sidebar-item.active .sidebar-icon{background:var(--accent);color:#fff;border-color:var(--accent)}
+.sidebar-footer-card{margin-top:auto;padding:14px 12px;background:var(--panel);
+  border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow-sm)}
+.sidebar-promo-text{font-size:12px;font-weight:600;color:var(--ink-2);line-height:1.5;
+  margin:0 0 8px}
+.sidebar-promo-link{font-size:12px;font-weight:600;color:var(--accent);line-height:1.4}
+
+.dash-main{padding:24px 26px;display:flex;flex-direction:column;gap:0;border-right:1px solid var(--line-soft)}
+.main-header{margin-bottom:18px;padding-bottom:16px;border-bottom:1px solid var(--line-soft)}
+.title-text{font-size:17px;font-weight:650;letter-spacing:-.015em;color:var(--ink);margin:0 0 4px}
+.title-sub{font-size:12px;color:var(--muted)}
+
+.result-banner{display:flex;align-items:center;gap:16px;padding:16px 18px;
+  border-radius:12px;margin-bottom:18px}
+.result-banner.fail{background:var(--fail-bg);border:1px solid var(--fail-line)}
+.result-banner.review{background:var(--warn-bg);border:1px solid var(--warn-line)}
+.result-banner.pass{background:var(--pass-bg);border:1px solid var(--pass-line)}
+.banner-badge{display:flex;align-items:center;gap:8px;flex:0 0 auto;
+  padding:8px 14px;border-radius:10px}
+.banner-swatch{width:14px;height:14px;border-radius:50%;flex:0 0 auto;
+  box-shadow:rgba(0,0,0,.10) 0 0 0 3px}
+.result-banner.fail .banner-badge{background:rgba(168,35,28,.10);color:var(--fail)}
+.result-banner.fail .banner-swatch{background:var(--fail)}
+.result-banner.review .banner-badge{background:rgba(154,100,17,.10);color:var(--warn)}
+.result-banner.review .banner-swatch{background:var(--warn)}
+.result-banner.pass .banner-badge{background:rgba(28,122,74,.10);color:var(--pass)}
+.result-banner.pass .banner-swatch{background:var(--pass)}
+.banner-label{font-size:13px;font-weight:700;letter-spacing:-.01em}
+.banner-text{flex:1;min-width:0}
+.banner-headline{font-size:15px;font-weight:650;line-height:1.35;color:var(--ink);
+  margin:0 0 3px;letter-spacing:-.01em}
+.result-banner.fail .banner-headline{color:var(--fail)}
+.result-banner.pass .banner-headline{color:var(--pass)}
+.result-banner.review .banner-headline{color:var(--warn)}
+.banner-sub{font-size:13px;line-height:1.5;color:var(--muted);margin:0}
+
+.summary-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;
+  padding:14px 0;border-bottom:1px solid var(--line-soft);margin-bottom:16px}
+.stat-item{text-align:center;padding:6px 4px;border-radius:8px;
+  background:var(--bg-gradient)}
+.stat-item .stat-num{font-size:22px;font-weight:700;letter-spacing:-.015em;line-height:1.2}
+.stat-item .stat-num.pass{color:var(--pass)}
+.stat-item .stat-num.warn{color:var(--warn)}
+.stat-item .stat-num.fail{color:var(--fail)}
+.stat-item .stat-label{font-size:11px;font-weight:500;color:var(--muted);margin-top:3px}
+
+.filter-bar{padding:12px 0;border-bottom:1px solid var(--line-soft);margin-bottom:14px;
+  display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.filter-chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;
+  font-size:12.5px;font-weight:550;cursor:pointer;transition:all .12s;
+  background:var(--bg-gradient);border:1px solid var(--line);color:var(--muted)}
+.chip:hover{background:var(--panel);color:var(--ink)}
+.chip.active{background:var(--accent-soft);border-color:rgb(195,212,245);color:var(--accent-ink)}
+.chip .chip-dot{width:8px;height:8px;border-radius:50%;background:currentcolor;opacity:.7}
+.filter-search{display:flex;gap:6px;align-items:center}
+.search-input{padding:7px 12px;border:1px solid var(--line);border-radius:8px;
+  font:inherit;font-size:12.5px;background:var(--bg-gradient);color:var(--ink);
+  width:180px;transition:border-color .12s}
+.search-input:focus{outline:none;border-color:var(--accent)}
+.filter-btn{padding:7px 14px;border:1px solid var(--line);border-radius:8px;
+  font:inherit;font-size:12.5px;font-weight:550;background:var(--panel);color:var(--ink-2);
+  cursor:pointer;transition:all .12s}
+.filter-btn:hover{border-color:rgb(195,206,228)}
+
+.results-table-wrap{margin-top:4px;overflow-x:auto}
+.results-table{width:100%;border-collapse:collapse;font-size:13px}
+.results-table th{position:sticky;top:0;background:var(--panel);font-size:11px;
+  font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);
+  padding:10px 10px;text-align:left;border-bottom:1px solid var(--line);
+  z-index:1}
+.results-table td{padding:11px 10px;border-bottom:1px solid var(--line-soft);
+  vertical-align:middle}
+.results-table tr:hover td{background:rgba(42,95,217,.02)}
+.col-check{width:36px}
+.col-level{width:72px}
+.col-status{width:80px}
+.col-guide{width:52px;text-align:center}
+.level-badge{display:inline-block;padding:3px 9px;border-radius:999px;font-size:11px;
+  font-weight:600;letter-spacing:-.01em}
+.level-badge.must{background:var(--fail-bg);color:var(--fail);border:1px solid var(--fail-line)}
+.level-badge.should{background:var(--warn-bg);color:var(--warn);border:1px solid var(--warn-line)}
+.level-badge.may{background:var(--bg-gradient);color:var(--muted);border:1px solid var(--line)}
+.status-badge{display:inline-block;padding:3px 10px;border-radius:999px;font-size:11.5px;
+  font-weight:650;letter-spacing:-.01em}
+.status-badge.pass{background:var(--pass-bg);color:var(--pass);border:1px solid var(--pass-line)}
+.status-badge.warn{background:var(--warn-bg);color:var(--warn);border:1px solid var(--warn-line)}
+.status-badge.fail{background:var(--fail-bg);color:var(--fail);border:1px solid var(--fail-line)}
+.status-badge.partial{background:var(--warn-bg);color:var(--warn);border:1px solid var(--warn-line)}
+.status-badge.notfound{background:var(--fail-bg);color:var(--fail);border:1px solid var(--fail-line)}
+.status-badge.external{background:#e9f0fc;color:var(--accent-ink);border:1px solid var(--info-line)}
+.status-badge.na{background:var(--bg-gradient);color:var(--muted);border:1px solid var(--line)}
+.guide-link{display:inline-flex;align-items:center;justify-content:center;
+  width:24px;height:24px;border-radius:6px;background:var(--bg-gradient);
+  border:1px solid var(--line);color:var(--accent);font-size:14px;font-weight:600;
+  transition:all .12s}
+.guide-link:hover{background:var(--accent-soft);border-color:rgb(195,212,245)}
+
+/* ========== 우측 패널 ========== */
+.dash-panel{padding:24px 22px;display:flex;flex-direction:column;gap:16px}
+.panel-card{background:var(--panel);border:1px solid var(--line);border-radius:14px;
+  padding:16px 18px;box-shadow:var(--shadow-sm)}
+.panel-card-title{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;
+  color:var(--muted);margin-bottom:14px}
+
+.action-steps{display:flex;flex-direction:column;gap:12px}
+.action-step{display:flex;gap:12px;align-items:flex-start}
+.action-num{flex:0 0 auto;width:26px;height:26px;border-radius:50%;display:flex;
+  align-items:center;justify-content:center;font-size:13px;font-weight:700;
+  background:var(--accent);color:#fff;box-shadow:rgba(30,64,175,.20) 0 2px 6px -1px}
+.action-body{min-width:0}
+.action-target{font-size:13.5px;font-weight:620;color:var(--ink);margin-bottom:2px;
+  letter-spacing:-.01em}
+.action-desc{font-size:12.5px;color:var(--muted);line-height:1.5;margin:0}
+.panel-btn{display:block;text-align:right;font-size:12.5px;font-weight:600;color:var(--accent);
+  margin-top:12px;padding-top:10px;border-top:1px solid var(--line-soft);
+  transition:color .15s}
+.panel-btn:hover{color:var(--accent-deep)}
+
+.readiness-body{display:flex;flex-direction:column;align-items:center;gap:12px}
+.donut-wrap{position:relative;width:100px;height:100px}
+.donut{width:100%;height:100%;transform:rotate(-90deg)}
+.donut-bg{stroke:var(--line)}
+.donut-fill{stroke:var(--pass);stroke-linecap:round;transition:stroke-dasharray .4s ease}
+.donut-center{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  text-align:center}
+.donut-pct{font-size:18px;font-weight:700;color:var(--ink);letter-spacing:-.02em;line-height:1}
+.donut-label{font-size:10px;color:var(--muted);margin-top:2px;letter-spacing:.02em}
+.donut-legend{display:flex;flex-direction:column;gap:6px;width:100%;text-align:center}
+.legend-item{display:flex;align-items:center;justify-content:center;gap:6px;
+  font-size:11.5px;color:var(--ink-2)}
+.legend-dot{width:9px;height:9px;border-radius:50%}
+
+.deadline-body{text-align:center}
+.deadline-days{font-size:28px;font-weight:700;color:var(--ink);letter-spacing:-.02em;line-height:1}
+.deadline-days span{color:var(--accent);font-weight:700}
+.deadline-datetime{font-size:12px;color:var(--muted);margin-top:4px}
+
+.quote-card{background:var(--accent-soft);border:1px solid rgb(195,212,245);
+  border-radius:14px;padding:16px 18px}
+.quote-text{font-size:13px;font-weight:500;color:var(--ink-2);line-height:1.55;
+  margin:0 0 10px;text-align:center;letter-spacing:-.01em}
+.quote-watermark{display:inline-flex;align-items:center;justify-content:center;
+  width:32px;height:32px;border-radius:8px;background:var(--accent);color:#fff;
+  font-size:13px;font-weight:700;margin:0 auto;box-shadow:rgba(30,64,175,.15) 0 2px 6px}
+
+/* ========== 상세 보고서 ========== */
+.detail-section{padding:32px 0 24px;max-width:1180px;margin:0 auto}
+.detail-inner{max-width:1180px;margin:0 auto;padding:0 40px}
+.detail-toggle{margin-bottom:14px}
+.detail-content{display:none;background:var(--panel);border:1px solid var(--line);
+  border-radius:16px;padding:24px 28px;box-shadow:var(--shadow)}
+.detail-content.on{display:block}
+.detail-section-title{font-size:14px;font-weight:650;color:var(--ink);margin:0 0 12px}
+.detail-section-body{background:#f8faff;border:1px solid var(--line-soft);
+  border-radius:10px;padding:14px 16px;margin-bottom:14px}
+.detail-matrix{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:8px}
+.detail-matrix th,.detail-matrix td{text-align:left;padding:7px 9px;
+  border-bottom:1px solid var(--line-soft)}
+.detail-matrix th{font-weight:600;color:var(--muted);font-size:11px;
+  text-transform:uppercase;letter-spacing:.04em}
+.detail-pillrow{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+.disclaimer-card{font-size:12.5px;color:var(--muted);background:var(--bg-gradient);
+  border:1px solid var(--line);border-radius:8px;padding:10px 14px;margin-top:8px;
+  line-height:1.55}
+
+/* ========== 분석 후 액션 ========== */
+.after-actions{display:none;max-width:1180px;margin:0 auto;padding:0 40px;
+  justify-content:flex-end;gap:10px;margin-top:10px}
+
+/* ========== 푸터 ========== */
+.footer{margin-top:48px;border-top:1px solid var(--line);background:var(--panel)}
+.footer-inner{max-width:1180px;margin:0 auto;padding:28px 40px}
+.footer-logos{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;
+  margin-bottom:18px}
+.footer-logo{display:inline-flex;align-items:center;justify-content:center;
+  width:38px;height:38px;border-radius:10px;background:var(--bg-gradient);
+  border:1px solid var(--line);color:var(--muted);font-size:13px;font-weight:700;
+  letter-spacing:-.02em;transition:all .15s}
+.footer-logo:hover{border-color:var(--accent);color:var(--accent-ink)}
+.footer-text{max-width:560px;margin:0 auto;text-align:center;font-size:12px;
+  color:var(--muted);line-height:1.65}
+
+/* ========== 반응형 ========== */
+@media (max-width:980px){
+  .hero{grid-template-columns:1fr;gap:36px;padding:48px 0 40px}
+  .hero-visual{height:340px}
+  .glass-panel.central{height:220px;width:72px}
+  .glass-panel.left,.glass-panel.right{width:180px;height:200px}
+  .wrap{padding:0 24px}
+  .header-inner{padding:0 24px;height:60px}
+  .header-nav{display:none}
+  .stats-strip{padding:0 24px}
+  .dash-panel{display:none}
+  .dashboard{grid-template-columns:1fr;border-radius:0}
+  .dash-sidebar{display:none}
+  .dash-main{border-right:none;border-bottom:1px solid var(--line-soft)}
+  .summary-stats{grid-template-columns:repeat(2,1fr);gap:8px}
+  .section-inner{padding:0 24px}
+  .detail-inner{padding:0 24px}
+  .input-grid{grid-template-columns:1fr}
+  .footer-inner{padding:24px 24px}
+}
+
+@media (max-width:540px){
+  h1.hero-title{font-size:36px}
+  .hero-body{font-size:15px}
+  .stat-num{font-size:28px}
+  .dashboard{grid-template-columns:1fr}
+}
 </style>
 </head>
 <body>
+
+<div class="bg-orbs" aria-hidden="true">
+  <div class="orb a"></div>
+  <div class="orb b"></div>
+</div>
+
+<!-- ========== 헤더 ========== -->
+<header class="header">
+  <div class="header-inner">
+    <div class="header-logo">
+      <span class="logo-mark">SC</span>
+      <span>SubmitCheck</span>
+    </div>
+    <nav class="header-nav">
+      <a href="#analyze">검증하기</a>
+      <a href="#features">기능 소개</a>
+      <a href="#cases">활용 사례</a>
+      <a href="#guide">가이드</a>
+    </nav>
+    <div class="header-actions">
+      <a href="#" class="btn-ghost-sm">내 작업</a>
+      <a href="#analyze" class="btn-primary-sm">지금 시작하기</a>
+    </div>
+  </div>
+</header>
+
+<div class="main">
 <div class="wrap">
-  <header>
-    <h1>SubmitCheck — 제출 전 필수요건 점검</h1>
-    <div class="sub">규정을 읽고 제출물을 준비 중인 사람을 위한 사전 제출 게이트.
-      규정 텍스트 + 제출물 초안을 붙여넣으면, 예선 스킬 SubmitCheck 방법론으로
-      원자 요구사항별 상태와 종합 판정을 분석해 "지금 제출 가능한지 / 뭐가 문제인지 / 뭐부터 고쳐야 하는지"를 먼저 보여줍니다.</div>
-  </header>
 
-  <div class="row">
-    <div class="card">
-      <label for="regulation">규정 / 공고 / 양식</label>
-      <textarea id="regulation" placeholder="규정·공고·양식의 규범적 요구사항을 여기에 붙여넣으세요.&#10;예: ‘제출물은 PDF 형식이어야 함’ ‘파일명은 submission.pdf여야 함’ 등"></textarea>
+  <!-- ========== 히어로 ========== -->
+  <section class="hero" id="features">
+    <div class="hero-text">
+      <span class="eyebrow"><span class="pip"></span>TURN REQUIREMENTS INTO CONFIDENCE</span>
+      <h1 class="hero-title">제출 직전,<br>놓친 걸 한 번에.</h1>
+      <p class="hero-body">
+        규정 텍스트와 제출물 초안을 넣으면, <strong>제출 가능 여부를 먼저</strong> 보여줍니다.
+        요구사항을 항목 단위로 쪼개고, 지금 통과인지·경고인지·막히는 지점인지까지 한 번에 정리합니다.
+      </p>
+      <div class="hero-cta">
+        <a href="#analyze" class="btn btn-primary">분석 시작하기</a>
+        <a href="#demo" class="btn btn-secondary">예시 결과로 보기</a>
+      </div>
+      <p class="hero-caption">제출의 마지막 1분을, 더 확실하게.</p>
     </div>
-    <div class="card">
-      <label for="submission">제출물 초안</label>
-      <textarea id="submission" placeholder="제출물의 현재 상태를 여기에 붙여넣으세요.&#10;예: ‘파일 형식: PDF’ ‘페이지 수: 12페이지’ ‘참고문헌 포함: 예’ 등"></textarea>
+
+    <div class="hero-visual">
+      <div class="scene">
+        <div class="light a"></div>
+        <div class="light b"></div>
+
+        <!-- 중앙 글래스 패널 -->
+        <div class="glass-panel central">
+          <div class="panel-content">
+            <div class="sc-logo">SC</div>
+            <div class="panel-sub">SUBMITCHECK<br>VALIDATES<br>BEFORE YOU<br>SUBMIT</div>
+          </div>
+        </div>
+
+        <!-- 좌측: 공고 요구사항 -->
+        <div class="glass-panel left">
+          <div class="card-header">
+            <span class="card-title">공고 요구사항</span>
+            <span class="card-badge">5 항목</span>
+          </div>
+          <div class="card-checklist">
+            <div class="check-item"><span class="check-mark">✓</span> 형식·확장자</div>
+            <div class="check-item"><span class="check-mark">✓</span> 파일명 규칙</div>
+            <div class="check-item"><span class="check-mark">✓</span> 분량·페이지</div>
+            <div class="check-item"><span class="check-mark">✓</span> 표지 포함</div>
+            <div class="check-item"><span class="check-mark">✓</span> 참고문헌</div>
+          </div>
+        </div>
+
+        <!-- 우측: 내 제출물 -->
+        <div class="glass-panel right">
+          <div class="card-header">
+            <span class="card-title">내 제출물</span>
+            <span class="card-badge">5 파일</span>
+          </div>
+          <div class="card-files">
+            <div class="file-item"><span class="file-status pass"></span> submission.pdf</div>
+            <div class="file-item"><span class="file-status pass"></span> appendix.pptx</div>
+            <div class="file-item"><span class="file-status warn"></span> data.xlsx</div>
+            <div class="file-item"><span class="file-status fail"></span> draft.docx</div>
+            <div class="file-item"><span class="file-status pass"></span> assets.zip</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== 통계 스트립 ========== -->
+  <div class="stats-strip">
+    <div class="stat-display">
+      <div class="stat-num">93%</div>
+      <div class="stat-label">제출 준비 완료율</div>
+    </div>
+    <div class="stat-divider"></div>
+    <div class="stat-display">
+      <div class="stat-num">-70%</div>
+      <div class="stat-label">수동 검토 시간 절감</div>
+    </div>
+    <div class="stat-divider"></div>
+    <div class="stat-display">
+      <div class="stat-num">10K+</div>
+      <div class="stat-label">제출물 점검</div>
     </div>
   </div>
+</div>
+</div>
 
-  <div class="btn-row">
-    <button id="analyzeBtn" class="primary" type="button">분석하기</button>
-    <button id="sampleBtn" class="secondary" type="button">예시 데이터로 시연</button>
-    <button id="clearBtn" class="secondary" type="button">입력 지우기</button>
+<div class="wrap">
+  <!-- ========== 분석 입력 섹션 ========== -->
+  <section class="analyze-section" id="analyze">
+    <div class="section-inner">
+      <div class="section-header">
+        <span class="section-eyebrow">지금 바로 검사</span>
+        <h2 class="section-title">규정하고 제출물을 넣으면, 바로 결과가 나옵니다</h2>
+      </div>
+      <div class="input-grid">
+        <div class="input-card">
+          <label class="input-label" for="regulation">규정 / 공고 / 양식</label>
+          <textarea id="regulation" class="input-textarea"
+            placeholder="규정·공고·양식의 규범적 요구사항을 여기에 붙여넣으세요.
+        예: ‘제출물은 PDF 형식이어야 함’ ‘파일명은 submission.pdf여야 함’ 등"></textarea>
+        </div>
+        <div class="input-card">
+          <label class="input-label" for="submission">제출물 초안</label>
+          <textarea id="submission" class="input-textarea"
+            placeholder="제출물의 현재 상태를 여기에 붙여넣으세요.
+        예: ‘파일 형식: PDF’ ‘페이지 수: 12페이지’ ‘참고문헌 포함: 예’ 등"></textarea>
+        </div>
+      </div>
+      <div class="input-actions">
+        <button id="analyzeBtn" class="btn btn-primary" type="button">분석하기</button>
+        <button id="sampleBtn" class="btn btn-secondary" type="button">예시 데이터로 시연</button>
+        <button id="clearBtn" class="btn btn-ghost" type="button">입력 지우기</button>
+      </div>
+    </div>
+  </section>
+</div>
+
+<!-- ========== 대시보드 (분석 결과) ========== -->
+<section class="dashboard-section" id="demo">
+  <div class="dashboard">
+
+    <!-- 좌 사이드바 -->
+    <aside class="dash-sidebar">
+      <div class="sidebar-logo">
+        <span class="logo-mark">SC</span>
+      </div>
+      <nav class="sidebar-nav">
+        <a href="#" class="sidebar-item active">
+          <span class="sidebar-icon">✓</span> 검증하기
+        </a>
+        <a href="#" class="sidebar-item">
+          <span class="sidebar-icon">◉</span> 결과 보기
+        </a>
+        <a href="#" class="sidebar-item">
+          <span class="sidebar-icon">⚙</span> 공고 관리
+        </a>
+        <a href="#" class="sidebar-item">
+          <span class="sidebar-icon">📁</span> 내 제출물
+        </a>
+        <a href="#" class="sidebar-item">
+          <span class="sidebar-icon">⋯</span> 설정
+        </a>
+      </nav>
+      <div class="sidebar-footer-card">
+        <p class="sidebar-promo-text">더 좋은 제출을 위해<br>함께 만들고 있어요</p>
+        <a href="#" class="sidebar-promo-link">피드백 보내기 →</a>
+      </div>
+    </aside>
+
+    <!-- 메인 영역 -->
+    <div class="dash-main">
+      <div class="main-header">
+        <div class="title-text" id="dashTitle">MABC 2026 결선 제출물</div>
+        <div class="title-sub" id="verifyTime">검증 일시: —</div>
+      </div>
+
+      <!-- 결과 배너 -->
+      <div class="result-banner" id="resultBanner">
+        <div class="banner-badge" id="bannerBadge">
+          <span class="banner-swatch"></span>
+          <span class="banner-label" id="bannerLabel">FAIL</span>
+        </div>
+        <div class="banner-text">
+          <p class="banner-headline" id="bannerHeadline">아직 제출할 수 없어요.</p>
+          <p class="banner-sub" id="bannerSub">아래 항목을 먼저 확인하세요.</p>
+        </div>
+      </div>
+
+      <!-- 요약 수치 -->
+      <div class="summary-stats">
+        <div class="stat-item">
+          <div class="stat-num" id="statTotal">0</div>
+          <div class="stat-label">전체</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-num pass" id="statPass">0</div>
+          <div class="stat-label">통과</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-num warn" id="statWarn">0</div>
+          <div class="stat-label">경고</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-num fail" id="statFail">0</div>
+          <div class="stat-label">미통과</div>
+        </div>
+      </div>
+
+      <!-- 필터 바 -->
+      <div class="filter-bar">
+        <div class="filter-chips" id="filterChips"></div>
+        <div class="filter-search">
+          <input type="text" class="search-input" placeholder="항목 검색...">
+          <button class="filter-btn">필터</button>
+        </div>
+      </div>
+
+      <!-- 결과 테이블 -->
+      <div class="results-table-wrap">
+        <table class="results-table">
+          <thead>
+            <tr>
+              <th class="col-check"><input type="checkbox"></th>
+              <th class="col-level">중요도</th>
+              <th class="col-item">항목</th>
+              <th class="col-status">상태</th>
+              <th class="col-reason">문제 내용</th>
+              <th class="col-guide">가이드</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 우 패널 -->
+    <aside class="dash-panel">
+      <div class="panel-card">
+        <div class="panel-card-title">지금 무엇을 할까요?</div>
+        <div class="action-steps" id="actionSteps"></div>
+        <a href="#" class="panel-btn">수정 가이드 보기 →</a>
+      </div>
+
+      <div class="panel-card">
+        <div class="panel-card-title">제출 준비도</div>
+        <div class="readiness-body">
+          <div class="donut-wrap">
+            <svg class="donut" viewBox="0 0 100 100">
+              <circle class="donut-bg" cx="50" cy="50" r="42" fill="none" stroke-width="8"/>
+              <circle class="donut-fill" id="donutFill" cx="50" cy="50" r="42" fill="none"
+                stroke-width="8" stroke-dasharray="0 264"/>
+            </svg>
+            <div class="donut-center">
+              <div class="donut-pct" id="donutPct">0%</div>
+              <div class="donut-label">준비됨</div>
+            </div>
+          </div>
+          <div class="donut-legend" id="donutLegend"></div>
+        </div>
+      </div>
+
+      <div class="panel-card">
+        <div class="panel-card-title">제출 마감까지</div>
+        <div class="deadline-body">
+          <div class="deadline-days">D-<span>5</span></div>
+          <div class="deadline-datetime">2026-09-14 23:59</div>
+        </div>
+      </div>
+
+      <div class="quote-card">
+        <p class="quote-text">놓친 것 없는지, 이제 SubmitCheck가 함께 확인할게요.</p>
+        <div class="quote-watermark">SC</div>
+      </div>
+    </aside>
   </div>
+</section>
 
-  <div id="statusBox">
-    <div class="status"><span class="badge idle" id="gateBadge">입력 대기</span></div>
-    <div id="lead" class="lead" style="display:none"></div>
-    <div id="actionLine" style="display:none"></div>
-  </div>
-
-  <div class="bar"></div>
-
-  <div id="detailWrap" style="display:none">
-    <div class="detail on" id="detailPane">
+<!-- ========== 상세 보고서 ========== -->
+<section class="detail-section" id="detailWrap" style="display:none">
+  <div class="detail-inner">
+    <div class="detail-toggle">
+      <button id="detailToggle" class="btn btn-ghost" type="button">상세 보고서 보기</button>
+    </div>
+    <div class="detail-content" id="detailContent">
       <div id="sections"></div>
-      <div class="disclaimer" id="disclaimer"></div>
+      <div class="disclaimer-card" id="disclaimer"></div>
     </div>
   </div>
+</section>
 
-  <div class="bar" id="chipRowWrap" style="display:none">
-    <div class="pillrow" id="chipRow"></div>
+<div class="wrap">
+  <div class="after-actions" id="afterActions">
+    <button id="regenerateBtn" class="btn btn-secondary" type="button">다시 분석</button>
+    <button id="downloadBtn" class="btn btn-ghost" type="button">분석 결과 내려받기</button>
   </div>
+</div>
 
-  <div class="actions" style="margin-top:14px" id="afterActions" style="display:none">
-    <button id="regenerateBtn" class="secondary" type="button">다시 분석</button>
-    <button id="downloadBtn" class="secondary" type="button">분석 결과 내려받기</button>
+<!-- ========== 푸터 ========== -->
+<footer class="footer">
+  <div class="footer-inner">
+    <div class="footer-logos">
+      <span class="footer-logo">SC</span>
+      <span class="footer-logo">MA</span>
+      <span class="footer-logo">BC</span>
+      <span class="footer-logo">AI</span>
+      <span class="footer-logo">MK</span>
+      <span class="footer-logo">YC</span>
+    </div>
+    <p class="footer-text">SubmitCheck는 제출 전 사전 점검을 돕는 도구입니다. 제공된 자료 범위 안에서 잠정 점검을 보여주며, 실제 접수·심사 결과를 보장하지 않습니다. 링크·계정·현재 시각처럼 외부에서 확인돼야 하는 항목은 외부 확인으로 표시해 제출 직전에 한 번 더 보도록 안내합니다.</p>
   </div>
+</footer>
 
-  <div class="foot">
-    SubmitCheck는 예선 스킬의 방법론을 그대로 이식한 사전 제출 게이트입니다.
-    이 결과는 제공 자료 범위의 잠정 점검이며, 공식 접수·심사 결과를 보장하지 않습니다.
-    외부 상태(실제 업로드·링크·계정·현재 시각) 확인이 필요한 항목은 서비스에서 직접 확인하지 않고
-    EXTERNAL_CHECK로 표시합니다.
-  </div>
 </div>
 
 <script>
@@ -149,151 +776,198 @@
   const clearBtn=document.getElementById('clearBtn');
   const regenerateBtn=document.getElementById('regenerateBtn');
   const downloadBtn=document.getElementById('downloadBtn');
-  const gateBadge=document.getElementById('gateBadge');
-  const leadEl=document.getElementById('lead');
-  const actionLine=document.getElementById('actionLine');
-  const statusBox=document.getElementById('statusBox');
+  const detailToggle=document.getElementById('detailToggle');
+  const detailContent=document.getElementById('detailContent');
   const detailWrap=document.getElementById('detailWrap');
   const sectionsEl=document.getElementById('sections');
   const disclaimer=document.getElementById('disclaimer');
-  const chipRowWrap=document.getElementById('chipRowWrap');
-  const chipRow=document.getElementById('chipRow');
+  const filterChips=document.getElementById('filterChips');
   const afterActions=document.getElementById('afterActions');
+  const demo=document.getElementById('demo');
+
+  const banner=document.getElementById('resultBanner');
+  const bannerBadge=document.getElementById('bannerBadge');
+  const bannerLabel=document.getElementById('bannerLabel');
+  const bannerHeadline=document.getElementById('bannerHeadline');
+  const bannerSub=document.getElementById('bannerSub');
+  const statTotal=document.getElementById('statTotal');
+  const statPass=document.getElementById('statPass');
+  const statWarn=document.getElementById('statWarn');
+  const statFail=document.getElementById('statFail');
+  const tableBody=document.getElementById('tableBody');
+  const actionSteps=document.getElementById('actionSteps');
+  const donutFill=document.getElementById('donutFill');
+  const donutPct=document.getElementById('donutPct');
+  const donutLegend=document.getElementById('donutLegend');
+  const verifyTime=document.getElementById('verifyTime');
+  const dashTitle=document.getElementById('dashTitle');
 
   let lastResult=null;
 
   function gateClass(g){
-    return g==='PROVISIONALLY_READY'?'ok':g==='REVIEW_REQUIRED'?'review':
-           g==='BLOCKED'?'blocked':g==='INSUFFICIENT_INPUT'?'insufficient':'idle';
+    return g==='PROVISIONALLY_READY'?'pass':g==='REVIEW_REQUIRED'?'review':
+           g==='BLOCKED'?'fail':'review';
   }
   function gateLabel(g){
     return {
-      'PROVISIONALLY_READY':'제출 준비 충족(잠정)',
-      'REVIEW_REQUIRED':'제출 전 검토 필요',
-      'BLOCKED':'제출 차단 — 필수 요건 미해결',
-      'INSUFFICIENT_INPUT':'입력 부족'
-    }[g]||g;
+      'PROVISIONALLY_READY':'PASS',
+      'REVIEW_REQUIRED':'REVIEW',
+      'BLOCKED':'FAIL',
+      'INSUFFICIENT_INPUT':'—'
+    }[g]||'—';
   }
 
-  function shortReason(state, reason){
-    if(!reason) return '';
-    if(state==='FAIL') return reason.length>120? reason.slice(0,117)+'…' : reason;
-    if(state==='PARTIAL') return reason.length>120? reason.slice(0,117)+'…' : reason;
-    if(state==='NOT_FOUND') return reason.length>110? reason.slice(0,107)+'…' : reason;
-    if(state==='AMBIGUOUS') return reason.length>120? reason.slice(0,117)+'…' : reason;
-    if(state==='EXTERNAL_CHECK') return reason.length>120? reason.slice(0,117)+'…' : reason;
-    return reason;
+  function stateClass(s){
+    if(!s) return '';
+    if(s==='PASS') return 'pass';
+    if(s==='FAIL') return 'fail';
+    if(s==='PARTIAL'||s==='AMBIGUOUS') return 'warn';
+    if(s==='NOT_FOUND') return 'fail';
+    if(s==='EXTERNAL_CHECK') return 'external';
+    if(s==='N/A') return 'na';
+    return '';
+  }
+
+  function levelLabel(l){
+    return l==='MUST'?'필수':l==='SHOULD'?'권장':'선택';
   }
 
   function render(result){
     lastResult=result;
     const g=result?.overallGate || 'UNKNOWN';
-    gateBadge.className='badge '+gateClass(g);
-    gateBadge.textContent=gateLabel(g);
-
     const issues=result?.issues || [];
-    const blocking=result?.blockingIssues || [];
-    const external=result?.externalChecks || [];
+    const matrixRows=result?.matrixRows || [];
     const actions=result?.prioritizedActions || [];
+    const external=result?.externalChecks || [];
 
-    // 요약 라인
-    leadEl.style.display='flex';
-    const ok= g==='PROVISIONALLY_READY';
-    leadEl.className='lead '+(ok?'ok':g==='REVIEW_REQUIRED'?'review':g==='BLOCKED'?'blocked':'insufficient');
-    const headTxt = ok
-      ? '지금 제출 가능합니다 (잠정)'
-      : g==='BLOCKED'
-        ? '지금 제출하면 안 됩니다 — 필수 요건이 해결 안 됨'
-        : g==='REVIEW_REQUIRED'
-          ? '지금 바로 제출은 보류 — 아래 항목을 확인·수정 필요'
-          : '규정 또는 제출물 중 한쪽이 비어 있습니다';
-    const subTxt = ok
-      ? '적용 가능한 모든 MUST가 통과했고, 필수 모호성·외부 확인 항목이 없습니다.'
-      : issues.length
-        ? (g==='BLOCKED'
-            ? '아래 MUST FAIL 항목부터 해결해야 제출을 진행할 수 있습니다.'
-            : `확인·수정 필요 항목 ${issues.length}개, 외부 확인 필요 항목 ${external.length}개가 있습니다.`)
-        : '세부 항목을 아래에서 확인하세요.';
-    leadEl.innerHTML=`<span class="mark"></span>
-      <div class="txt">
-        <div class="head">${headTxt}</div>
-        <div class="sub2">${subTxt}</div>
-      </div>`;
+    // 대시보드 표시
+    demo.style.display='grid';
+    verifyTime.textContent='검증 일시: '+new Date().toLocaleString('ko-KR');
 
-    // 행동 라인
-    actionLine.style.display='block';
-    if(actions.length){
-      const list=actions.slice(0,4).map((a,i)=>`<div style="margin-top:6px"><span class="pill">${a.order==='NOW'?'지금':'나중'}</span> ${escapeHtml(a.action)}</div>`).join('');
-      actionLine.innerHTML=`<div class="head" style="font-weight:650;margin-bottom:4px">뭐부터 고쳐야 하는지</div>${list}`;
+    // 결과 배너
+    const gClass=gateClass(g);
+    banner.className='result-banner '+gClass;
+    bannerBadge.innerHTML='<span class="banner-swatch"></span>';
+    bannerLabel.textContent=gateLabel(g);
+
+    if(g==='PROVISIONALLY_READY'){
+      bannerHeadline.textContent='지금 제출 가능합니다 (잠정)';
+      bannerSub.textContent='적용 가능한 모든 MUST가 통과했고, 필수 모호성·외부 확인 항목이 없습니다.';
+    } else if(g==='BLOCKED'){
+      bannerHeadline.textContent='지금 제출하면 안 됩니다 — 필수 요건이 해결 안 됨';
+      bannerSub.textContent='아래 MUST FAIL 항목부터 해결해야 제출을 진행할 수 있습니다.';
+    } else if(g==='REVIEW_REQUIRED'){
+      bannerHeadline.textContent='지금 바로 제출은 보류 — 아래 항목을 확인·수정 필요';
+      bannerSub.textContent=`확인·수정 필요 항목 ${issues.length}개, 외부 확인 필요 항목 ${external.length}개가 있습니다.`;
     } else {
-      actionLine.innerHTML='<div class="head" style="font-weight:650;margin-bottom:4px">뭐부터 고쳐야 하는지</div><div class="sub2">별도의 우선순위 조치가 없습니다.</div>';
+      bannerHeadline.textContent='분석 결과를 확인 중입니다';
+      bannerSub.textContent='';
     }
 
-    // 칩: 이슈 유형별 빠른 필터
-    chipRowWrap.style.display='block';
-    const pills=[];
-    if(blocking.length) pills.push({label:`차단 ${blocking.length}건`, type:'bad', filter:'blocking'});
-    if(issues.filter(i=>i.state==='NOT_FOUND').length) pills.push({label:`누락 ${issues.filter(i=>i.state==='NOT_FOUND').length}건`, type:'bad', filter:'notfound'});
-    if(issues.filter(i=>i.state==='PARTIAL').length) pills.push({label:`부분 충족 ${issues.filter(i=>i.state==='PARTIAL').length}건`, type:'warn', filter:'partial'});
-    if(issues.filter(i=>i.state==='AMBIGUOUS').length) pills.push({label:`모호·충돌 ${issues.filter(i=>i.state==='AMBIGUOUS').length}건`, type:'warn', filter:'ambig'});
-    if(external.length) pills.push({label:`외부 확인 ${external.length}건`, type:'info', filter:'external'});
-    if(issues.filter(i=>i.state==='PASS').length) pills.push({label:`통과 ${issues.filter(i=>i.state==='PASS').length}건`, type:'ok', filter:'pass'});
-    chipRow.innerHTML=pills.map(p=>`<span class="chip ${p.type==='bad'?'active':p.type==='warn'?'active':''} ${p.type==='bad'?'':(p.type==='warn'?'':'status')}" data-filter="${p.filter}">${escapeHtml(p.label)}</span>`).join('') ||
-      '<span class="chip">표시할 항목 필터가 없습니다</span>';
+    // 요약 수치
+    const total=issues.length;
+    const passCount=issues.filter(i=>i.state==='PASS').length;
+    const warnCount=issues.filter(i=>i.state==='PARTIAL'||i.state==='AMBIGUOUS').length;
+    const failCount=issues.filter(i=>i.state==='FAIL'||i.state==='NOT_FOUND').length;
+    statTotal.textContent=total;
+    statPass.textContent=passCount;
+    statWarn.textContent=warnCount;
+    statFail.textContent=failCount;
 
-    chipRow.querySelectorAll('.chip[data-filter]').forEach(el=>{
+    // 도넛
+    const passRate=total>0?Math.round(passCount/total*100):0;
+    donutPct.textContent=passRate+'%';
+    const circ=264;
+    const fillLen=total>0?(passCount/total*circ):0;
+    donutFill.setAttribute('stroke-dasharray',fillLen+' '+(circ-fillLen));
+    donutLegend.innerHTML=
+      '<div class="legend-item"><span class="legend-dot" style="background:var(--pass)"></span>통과 '+passCount+'</div>'+
+      '<div class="legend-item"><span class="legend-dot" style="background:var(--warn)"></span>경고 '+warnCount+'</div>'+
+      '<div class="legend-item"><span class="legend-dot" style="background:var(--fail)"></span>미통과 '+failCount+'</div>'+
+      '<div class="legend-item"><span class="legend-dot" style="background:var(--muted)"></span>전체 '+total+'</div>';
+
+    // 필터 칩
+    const chips=[];
+    if(result?.blockingIssues?.length) chips.push({label:'차단 '+result.blockingIssues.length+'건',type:'fail',filter:'blocking'});
+    if(issues.filter(i=>i.state==='NOT_FOUND').length) chips.push({label:'누락 '+issues.filter(i=>i.state==='NOT_FOUND').length+'건',type:'fail',filter:'notfound'});
+    if(issues.filter(i=>i.state==='PARTIAL').length) chips.push({label:'부분 충족 '+issues.filter(i=>i.state==='PARTIAL').length+'건',type:'warn',filter:'partial'});
+    if(issues.filter(i=>i.state==='AMBIGUOUS').length) chips.push({label:'모호·충돌 '+issues.filter(i=>i.state==='AMBIGUOUS').length+'건',type:'warn',filter:'ambig'});
+    if(external.length) chips.push({label:'외부 확인 '+external.length+'건',type:'info',filter:'external'});
+    if(issues.filter(i=>i.state==='PASS').length) chips.push({label:'통과 '+issues.filter(i=>i.state==='PASS').length+'건',type:'pass',filter:'pass'});
+    filterChips.innerHTML=chips.map(c=>
+      '<span class="chip '+(c.type==='fail'?'active':'')+'" data-filter="'+c.filter+'">'+
+      '<span class="chip-dot"></span>'+escapeHtml(c.label)+'</span>'
+    ).join('')||'<span class="chip">표시할 항목 필터가 없습니다</span>';
+    filterChips.querySelectorAll('.chip[data-filter]').forEach(el=>{
       el.addEventListener('click',()=>{
         const f=el.dataset.filter;
-        renderFiltered(result, f);
+        renderFiltered(result,f);
+        filterChips.querySelectorAll('.chip').forEach(c=>c.classList.remove('active'));
+        el.classList.add('active');
       });
     });
 
-    // 상세 섹션 (10개)
+    // 테이블
+    tableBody.innerHTML=matrixRows.map(r=>{
+      const level=r.level||'MAY';
+      const s=r.status||'NOT_FOUND';
+      const sc=stateClass(s);
+      return '<tr>'+
+        '<td class="col-check"><input type="checkbox"></td>'+
+        '<td class="col-level"><span class="level-badge '+(level==='MUST'?'must':level==='SHOULD'?'should':'may')+'">'+levelLabel(level)+'</span></td>'+
+        '<td class="col-item">'+escapeHtml(r.atom||r.id||'')+'</td>'+
+        '<td class="col-status"><span class="status-badge '+sc+'">'+escapeHtml(s)+'</span></td>'+
+        '<td class="col-reason">'+escapeHtml(r.reason||'')+'</td>'+
+        '<td class="col-guide"><a href="#" class="guide-link" title="가이드 보기">→</a></td>'+
+      '</tr>';
+    }).join('')||'<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--muted)">표시할 항목이 없습니다</td></tr>';
+
+    // 액션 스텝 (우 패널)
+    const topActions=actions.slice(0,3);
+    actionSteps.innerHTML=topActions.map((a,i)=>
+      '<div class="action-step">'+
+        '<div class="action-num">'+(i+1)+'</div>'+
+        '<div class="action-body">'+
+          '<div class="action-target">'+(a.target?escapeHtml(a.target):'조치')+'</div>'+
+          '<div class="action-desc">'+escapeHtml(a.action||'')+'</div>'+
+        '</div>'+
+      '</div>'
+    ).join('')||'<div style="font-size:13px;color:var(--muted);padding:8px 0">우선순위 조치가 없습니다.</div>';
+
+    // 상세 보고서
     detailWrap.style.display='block';
     sectionsEl.innerHTML=renderSections(result);
-
-    disclaimer.innerHTML = escapeHtml(result?.disclaimer || '');
+    disclaimer.innerHTML=escapeHtml(result?.disclaimer||'');
     afterActions.style.display='flex';
+    detailContent.classList.remove('on');
   }
 
-  function renderFiltered(result, filter){
-    // 전체 표시는 유지하되, 해당 유형의 항목을 강조하거나 별도 요약 제공.
-    // 간단히 칩 클릭 시 해당 유형 개수를 배지에 반영.
-    const issues=result?.issues || [];
-    const external=result?.externalChecks || [];
-    let count=0, label='';
-    if(filter==='blocking'){ count=result?.blockingIssues?.length||0; label='차단 항목'; }
-    else if(filter==='notfound'){ count=issues.filter(i=>i.state==='NOT_FOUND').length; label='누락 항목'; }
-    else if(filter==='partial'){ count=issues.filter(i=>i.state==='PARTIAL').length; label='부분 충족 항목'; }
-    else if(filter==='ambig'){ count=issues.filter(i=>i.state==='AMBIGUOUS').length; label='모호·충돌 항목'; }
-    else if(filter==='external'){ count=external.length; label='외부 확인 항목'; }
-    else if(filter==='pass'){ count=issues.filter(i=>i.state==='PASS').length; label='통과 항목'; }
+  function renderFiltered(result,filter){
+    const issues=result?.issues||[];
+    const external=result?.externalChecks||[];
+    let count=0,label='';
+    if(filter==='blocking'){count=result?.blockingIssues?.length||0;label='차단 항목';}
+    else if(filter==='notfound'){count=issues.filter(i=>i.state==='NOT_FOUND').length;label='누락 항목';}
+    else if(filter==='partial'){count=issues.filter(i=>i.state==='PARTIAL').length;label='부분 충족 항목';}
+    else if(filter==='ambig'){count=issues.filter(i=>i.state==='AMBIGUOUS').length;label='모호·충돌 항목';}
+    else if(filter==='external'){count=external.length;label='외부 확인 항목';}
+    else if(filter==='pass'){count=issues.filter(i=>i.state==='PASS').length;label='통과 항목';}
     if(count){
-      gateBadge.textContent = `${label} ${count}건 (전체 게이트: ${gateLabel(result.overallGate)})`;
+      bannerLabel.textContent=label+' '+count+'건';
     }
   }
 
   function renderSections(result){
-    // 1. 검토 범위
-    // 2. 입력 자료
-    // 3. 종합 판정
-    // 4. 요구사항 대응표
-    // 5. 평가기준 대응
-    // 6. 제출 차단 항목
-    // 7. 경고·모호성
-    // 8. 외부 확인 항목
-    // 9. 수정 우선순위
-    // 10. 최종 전달문
     const s=[];
-    s.push(section('1. Review Scope / 검토 범위', escapeHtml(result.scope || 'NONE')));
-    s.push(section('2. Input Inventory / 입력 자료', renderInventory(result.inventories)));
+    s.push(section('1. Review Scope / 검토 범위',escapeHtml(result.scope||'NONE')));
+    s.push(section('2. Input Inventory / 입력 자료',renderInventory(result.inventories)));
     s.push(section('3. Overall Gate / 종합 판정',
-      `<div class="pillrow"><span class="pill ${gateClass(result.overallGate)}">${gateLabel(result.overallGate)}</span></div>
-       <div style="margin-top:8px;color:var(--muted);font-size:13.5px">종합 판정: ${result.overallGate || 'UNKNOWN'}</div>`));
+      '<div class="detail-pillrow"><span class="status-badge '+stateClass(result.overallGate)+'">'+gateLabel(result.overallGate)+'</span></div>'+
+      '<div style="color:var(--muted);font-size:13px">종합 판정: '+result.overallGate+'</div>'));
     s.push(matrix('4. Requirement–Evidence–Status Matrix / 요구사항 대응표',
-      result.matrixRows, ['ID','요구사항(원문 요약)','출처','의무 수준','검증 유형','상태','판정 이유']));
+      result.matrixRows,['ID','요구사항(원문 요약)','출처','의무 수준','검증 유형','상태','판정 이유']));
     s.push(matrix('5. Rubric Coverage / 평가기준 대응',
-      result. rubricRows, ['ID','평가기준(원문 요약)','출처','상태','판정 이유']));
+      result.rubricRows,['ID','평가기준(원문 요약)','출처','상태','판정 이유']));
     s.push(blockingBlock(result.blockingIssues));
     s.push(warningsBlock(result.warnings));
     s.push(externalBlock(result.externalChecks));
@@ -302,95 +976,91 @@
     return s.join('');
   }
 
-  function section(title, body){
-    return `<div style="margin-top:14px"><div style="font-weight:650;font-size:14px;margin-bottom:8px;color:var(--ink)">${escapeHtml(title)}</div>
-      <div class="fullbg">${body}</div></div>`;
+  function section(title,body){
+    return '<div><div class="detail-section-title">'+escapeHtml(title)+'</div>'+
+      '<div class="detail-section-body">'+body+'</div></div>';
   }
   function renderInventory(inv){
-    if(!inv||!inv.length) return '<div class="sub2">NONE — 입력 자료 미제공</div>';
-    return inv.map(i=>`<div style="margin-top:6px"><span class="pill info">${escapeHtml(i.kind)}</span>
-      <span style="margin-left:8px">${escapeHtml(i.text)}</span></div>`).join('');
+    if(!inv||!inv.length) return '<div style="color:var(--muted);font-size:13px">NONE — 입력 자료 미제공</div>';
+    return inv.map(i=>'<div style="margin-top:6px;font-size:13px">'+
+      '<span class="level-badge may">'+escapeHtml(i.kind)+'</span>'+
+      '<span style="margin-left:8px;color:var(--ink-2)">'+escapeHtml(i.text)+'</span></div>').join('');
   }
-  function matrix(title, rows, cols){
-    if(!rows||!rows.length) return section(title,'<div class="sub2">NONE</div>');
-    const head=cols.map(c=>`<th>${escapeHtml(c)}</th>`).join('');
+  function matrix(title,rows,cols){
+    if(!rows||!rows.length) return section(title,'<div style="color:var(--muted);font-size:13px">NONE</div>');
+    const head=cols.map(c=>'<th>'+escapeHtml(c)+'</th>').join('');
     const body=rows.map(r=>{
       const cells=cols.map(c=>{
-        const v=r[c.toLowerCase().replace(/\s/g,'').replace(/[–-]/g,'')] || '';
-        if(c==='상태') return `<td class="cur"><span class="pill ${stateClass(v)}">${escapeHtml(v)}</span></td>`;
-        return `<td>${escapeHtml(String(v))}</td>`;
+        const key=c.toLowerCase().replace(/\s/g,'').replace(/[–-]/g,'');
+        const v=r[key]||'';
+        if(c==='상태') return '<td><span class="status-badge '+stateClass(v)+'">'+escapeHtml(v)+'</span></td>';
+        return '<td>'+escapeHtml(String(v))+'</td>';
       }).join('');
-      return `<tr>${cells}</tr>`;
+      return '<tr>'+cells+'</tr>';
     }).join('');
-    return section(title,`<table class="matrix"><thead><tr>${head}</thead><tbody>${body}</tbody></table>`);
-  }
-  function stateClass(s){
-    if(!s) return '';
-    if(s==='PASS') return 'ok';
-    if(s==='FAIL') return 'bad';
-    if(s==='PARTIAL'||s==='AMBIGUOUS') return 'warn';
-    if(s==='NOT_FOUND') return 'bad';
-    if(s==='EXTERNAL_CHECK') return 'info';
-    if(s==='N/A') return 'info';
-    return '';
+    return section(title,'<table class="detail-matrix"><thead><tr>'+head+'</thead><tbody>'+body+'</tbody></table>');
   }
   function blockingBlock(rows){
-    if(!rows||!rows.length) return section('6. Blocking Issues / 제출 차단 항목','<div class="sub2">NONE — 제출 차단 항목 없음</div>');
+    if(!rows||!rows.length) return section('6. Blocking Issues / 제출 차단 항목',
+      '<div style="color:var(--muted);font-size:13px">NONE — 제출 차단 항목 없음</div>');
     return section('6. Blocking Issues / 제출 차단 항목',
-      `<div style="margin-top:6px"><span class="pill bad">MUST FAIL — 제출 전 반드시 해결</span></div>
-       <div style="margin-top:8px">${rows.map(r=>`<div style="margin-top:7px"><b>${escapeHtml(r.id)}</b> — ${escapeHtml(r.reason)}</div>`).join('')}</div>`);
+      '<div class="detail-pillrow"><span class="level-badge must">MUST FAIL — 제출 전 반드시 해결</span></div>'+
+      '<div style="margin-top:8px;font-size:13px">'+rows.map(r=>
+        '<div style="margin-top:6px"><b>'+escapeHtml(r.id)+'</b> — '+escapeHtml(r.reason)+'</div>').join('')+'</div>');
   }
   function warningsBlock(rows){
-    if(!rows||!rows.length) return section('7. Warnings & Ambiguities / 경고·모호성','<div class="sub2">NONE — 실제 충돌·모호성 없음</div>');
+    if(!rows||!rows.length) return section('7. Warnings & Ambiguities / 경고·모호성',
+      '<div style="color:var(--muted);font-size:13px">NONE — 실제 충돌·모호성 없음</div>');
     return section('7. Warnings & Ambiguities / 경고·모호성',
-      `<div style="margin-top:6px"><span class="pill warn">모호성·충돌</span></div>
-       <div style="margin-top:8px">${rows.map(r=>`<div style="margin-top:7px"><b>${escapeHtml(r.id)}</b> — ${escapeHtml(r.reason)}</div>`).join('')}</div>`);
+      '<div class="detail-pillrow"><span class="level-badge should">모호성·충돌</span></div>'+
+      '<div style="margin-top:8px;font-size:13px">'+rows.map(r=>
+        '<div style="margin-top:6px"><b>'+escapeHtml(r.id)+'</b> — '+escapeHtml(r.reason)+'</div>').join('')+'</div>');
   }
   function externalBlock(rows){
-    if(!rows||!rows.length) return section('8. External Checks / 외부 확인 항목','<div class="sub2">NONE — 외부 확인 필요 항목 없음</div>');
+    if(!rows||!rows.length) return section('8. External Checks / 외부 확인 항목',
+      '<div style="color:var(--muted);font-size:13px">NONE — 외부 확인 필요 항목 없음</div>');
     return section('8. External Checks / 외부 확인 항목',
-      `<div style="margin-top:6px"><span class="pill info">외부 상태 확인 필요 — 서비스에서 직접 확인 불가</span></div>
-       <div style="margin-top:8px">${rows.map(r=>`<div style="margin-top:7px"><b>${escapeHtml(r.id)}</b> — ${escapeHtml(r.reason)}</div>`).join('')}</div>`);
+      '<div class="detail-pillrow"><span class="level-badge may">외부 상태 확인 필요 — 서비스에서 직접 확인 불가</span></div>'+
+      '<div style="margin-top:8px;font-size:13px">'+rows.map(r=>
+        '<div style="margin-top:6px"><b>'+escapeHtml(r.id)+'</b> — '+escapeHtml(r.reason)+'</div>').join('')+'</div>');
   }
   function actionsBlock(actions){
-    if(!actions||!actions.length) return section('9. Prioritized Action Checklist / 수정 우선순위','<div class="sub2">NONE — 우선순위 조치 없음</div>');
+    if(!actions||!actions.length) return section('9. Prioritized Action Checklist / 수정 우선순위',
+      '<div style="color:var(--muted);font-size:13px">NONE — 우선순위 조치 없음</div>');
     return section('9. Prioritized Action Checklist / 수정 우선순위',
-      actions.map((a,i)=>`<div style="margin-top:7px">
-        <span class="pill ${a.order==='NOW'?'bad':a.order==='NEXT'?'warn':'info'}">${escapeHtml(a.order)}</span>
-        <b>${escapeHtml(a.target)}</b> — ${escapeHtml(a.action)}
-      </div>`).join(''));
+      actions.map((a,i)=>'<div style="margin-top:7px;font-size:13px">'+
+        '<span class="level-badge '+(a.order==='NOW'?'must':a.order==='NEXT'?'should':'may')+'">'+
+        (a.order==='NOW'?'지금':a.order==='NEXT'?'다음':'나중')+'</span> '+
+        '<b>'+(a.target?escapeHtml(a.target):'')+'</b> — '+escapeHtml(a.action)+'</div>').join(''));
   }
   function handoffBlock(h){
-    if(!h) return section('10. Submission Handoff / 최종 전달문','<div class="sub2">NONE</div>');
+    if(!h) return section('10. Submission Handoff / 최종 전달문',
+      '<div style="color:var(--muted);font-size:13px">NONE</div>');
     return section('10. Submission Handoff / 최종 전달문',
-      `<div style="margin-top:6px">${escapeHtml(h)}</div>
-       <div style="margin-top:8px;color:var(--muted);font-size:12.5px">※ 제공 자료 범위의 잠정 점검이며 공식 접수·심사 결과를 보장하지 않음.</div>`);
+      '<div style="font-size:13px;line-height:1.6">'+escapeHtml(h)+'</div>'+
+      '<div style="margin-top:8px;color:var(--muted);font-size:12px">※ 제공 자료 범위의 잠정 점검이며 공식 접수·심사 결과를 보장하지 않음.</div>');
   }
 
   function escapeHtml(s){
     if(s==null) return '';
-    return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    return String(s).replace(/[&<>\"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   }
 
   function setLoading(on){
     btn.disabled=on;
-    btn.textContent = on ? '분석 중…' : '분석하기';
-    if(on) btn.classList.add('loading'); else btn.classList.remove('loading');
+    btn.textContent=on?'분석 중…':'분석하기';
+    btn.style.pointerEvents=on?'none':'auto';
   }
 
   async function analyze(){
     const reg=R.value.trim();
     const sub=S.value.trim();
     if(!reg||!sub){
-      gateBadge.className='badge insufficient';
-      gateBadge.textContent='입력 부족';
-      leadEl.style.display='flex';
-      leadEl.className='lead insufficient';
-      leadEl.innerHTML=`<span class="mark"></span>
-        <div class="txt"><div class="head">규정 또는 제출물 중 한쪽이 비어 있습니다</div>
-          <div class="sub2">두 칸을 모두 채워야 분석을 시작할 수 있습니다.</div></div>`;
+      demo.style.display='none';
       detailWrap.style.display='none';
       afterActions.style.display='none';
+      dashTitle.textContent='—';
+      verifyTime.textContent='검증 일시: —';
       return;
     }
     setLoading(true);
@@ -398,22 +1068,28 @@
       const res=await fetch('/api/analyze',{
         method:'POST',
         headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({regulation:reg, submission:sub})
+        body:JSON.stringify({regulation:reg,submission:sub})
       });
       if(!res.ok){
         const text=await res.text().catch(()=>'');
-        throw new Error(`API 응답 오류 (${res.status}): ${text.slice(0,300)}`);
+        throw new Error('API 응답 오류 ('+res.status+'): '+text.slice(0,300));
       }
       const data=await res.json();
       render(data);
+      demo.scrollIntoView({behavior:'smooth',block:'start'});
     }catch(e){
-      gateBadge.className='badge insufficient';
-      gateBadge.textContent='분석 실패';
-      leadEl.style.display='flex';
-      leadEl.className='lead insufficient';
-      leadEl.innerHTML=`<span class="mark"></span>
-        <div class="txt"><div class="head">분석을 완료하지 못했습니다</div>
-          <div class="sub2">${escapeHtml(e.message)} — 페이지를 새로고침하고 다시 시도하거나, 예시 데이터로 시연해 보세요.</div></div>`;
+      demo.style.display='grid';
+      banner.className='result-banner review';
+      bannerBadge.innerHTML='<span class="banner-swatch"></span>';
+      bannerLabel.textContent='ERROR';
+      bannerHeadline.textContent='분석을 완료하지 못했습니다';
+      bannerSub.textContent=e.message+' — 페이지를 새로고침하고 다시 시도하거나, 예시 데이터로 시연해 보세요.';
+      statTotal.textContent='—';statPass.textContent='—';statWarn.textContent='—';statFail.textContent='—';
+      tableBody.innerHTML='<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--muted)">분석 중 오류가 발생했습니다</td></tr>';
+      actionSteps.innerHTML='<div style="font-size:13px;color:var(--muted)">분석 중 오류가 발생했습니다.</div>';
+      donutPct.textContent='—';
+      donutFill.setAttribute('stroke-dasharray','0 264');
+      donutLegend.innerHTML='';
       detailWrap.style.display='none';
       afterActions.style.display='none';
     }finally{
@@ -424,34 +1100,33 @@
   function showSample(){
     R.value=sampleRegulation;
     S.value=sampleSubmission;
-    // 자동 분석 안 함 — 사용자가 버튼 누르게 함.
-    gateBadge.className='badge idle';
-    gateBadge.textContent='예시 입력됨';
-    leadEl.style.display='none';
+    demo.style.display='none';
     detailWrap.style.display='none';
     afterActions.style.display='none';
+    dashTitle.textContent='—';
+    verifyTime.textContent='검증 일시: —';
+    window.scrollTo({top:document.getElementById('analyze').offsetTop-80,behavior:'smooth'});
   }
 
   function clearAll(){
-    R.value=''; S.value='';
+    R.value='';S.value='';
     lastResult=null;
-    gateBadge.className='badge idle';
-    gateBadge.textContent='입력 대기';
-    leadEl.style.display='none';
-    actionLine.style.display='none';
+    demo.style.display='none';
     detailWrap.style.display='none';
-    chipRowWrap.style.display='none';
     afterActions.style.display='none';
+    dashTitle.textContent='—';
+    verifyTime.textContent='검증 일시: —';
+    filterChips.innerHTML='';
   }
 
   function downloadResult(){
-    if(!lastResult){ return; }
-    const text = formatReportText(lastResult);
+    if(!lastResult) return;
+    const text=formatReportText(lastResult);
     const blob=new Blob([text],{type:'text/plain;charset=utf-8'});
     const url=URL.createObjectURL(blob);
     const a=document.createElement('a');
-    a.href=url; a.download='submitcheck-report.txt';
-    document.body.appendChild(a); a.click(); a.remove();
+    a.href=url;a.download='submitcheck-report.txt';
+    document.body.appendChild(a);a.click();a.remove();
     URL.revokeObjectURL(url);
   }
 
@@ -460,66 +1135,72 @@
     lines.push('SUBMITCHECK REPORT');
     lines.push('');
     lines.push('1. Review Scope / 검토 범위');
-    lines.push('  '+ (r.scope || 'NONE'));
+    lines.push('  '+(r.scope||'NONE'));
     lines.push('');
     lines.push('2. Input Inventory / 입력 자료');
     if(r.inventories&&r.inventories.length){
-      r.inventories.forEach(i=>lines.push(`  [${i.kind}] ${i.text}`));
-    } else lines.push('  NONE');
+      r.inventories.forEach(i=>lines.push('  ['+i.kind+'] '+i.text));
+    }else lines.push('  NONE');
     lines.push('');
     lines.push('3. Overall Gate / 종합 판정');
-    lines.push('  '+ (r.overallGate || 'UNKNOWN'));
+    lines.push('  '+(r.overallGate||'UNKNOWN'));
     lines.push('');
     lines.push('4. Requirement–Evidence–Status Matrix / 요구사항 대응표');
     if(r.matrixRows&&r.matrixRows.length){
       const cols=['ID','atom','source','level','vt','status','reason'];
       r.matrixRows.forEach(row=>{
-        lines.push('  '+(cols.map(c=>row[c]||'').join(' | '));
+        lines.push('  '+(cols.map(c=>row[c]||'').join(' | ')));
       });
-    } else lines.push('  NONE');
+    }else lines.push('  NONE');
     lines.push('');
     lines.push('5. Rubric Coverage / 평가기준 대응');
     if(r.rubricRows&&r.rubricRows.length){
       r.rubricRows.forEach(row=>{
-        lines.push('  '+(['id','criterion','source','status','reason'].map(c=>row[c]||'').join(' | '));
+        lines.push('  '+['id','criterion','source','status','reason'].map(c=>row[c]||'').join(' | '));
       });
-    } else lines.push('  NONE');
+    }else lines.push('  NONE');
     lines.push('');
     lines.push('6. Blocking Issues / 제출 차단 항목');
     if(r.blockingIssues&&r.blockingIssues.length){
-      r.blockingIssues.forEach(b=>lines.push(`  [${b.id}] ${b.reason}`));
-    } else lines.push('  NONE');
+      r.blockingIssues.forEach(b=>lines.push('  ['+b.id+'] '+b.reason));
+    }else lines.push('  NONE');
     lines.push('');
     lines.push('7. Warnings & Ambiguities / 경고·모호성');
     if(r.warnings&&r.warnings.length){
-      r.warnings.forEach(w=>lines.push(`  [${w.id}] ${w.reason}`));
-    } else lines.push('  NONE');
+      r.warnings.forEach(w=>lines.push('  ['+w.id+'] '+w.reason));
+    }else lines.push('  NONE');
     lines.push('');
     lines.push('8. External Checks / 외부 확인 항목');
     if(r.externalChecks&&r.externalChecks.length){
-      r.externalChecks.forEach(e=>lines.push(`  [${e.id}] ${e.reason}`));
-    } else lines.push('  NONE');
+      r.externalChecks.forEach(e=>lines.push('  ['+e.id+'] '+e.reason));
+    }else lines.push('  NONE');
     lines.push('');
     lines.push('9. Prioritized Action Checklist / 수정 우선순위');
     if(r.prioritizedActions&&r.prioritizedActions.length){
-      r.prioritizedActions.forEach(a=>lines.push(`  [${a.order}] ${a.target}: ${a.action}`));
-    } else lines.push('  NONE');
+      r.prioritizedActions.forEach(a=>lines.push('  ['+a.order+'] '+(a.target||'')+': '+a.action));
+    }else lines.push('  NONE');
     lines.push('');
     lines.push('10. Submission Handoff / 최종 전달문');
-    lines.push('  '+(r.handoff || 'NONE'));
+    lines.push('  '+(r.handoff||'NONE'));
     lines.push('');
     lines.push('제공 자료 범위의 잠정 점검이며 공식 접수·심사 결과를 보장하지 않음.');
     return lines.join('\n');
   }
 
-  btn.addEventListener('click', analyze);
-  sampleBtn.addEventListener('click', showSample);
-  clearBtn.addEventListener('click', clearAll);
-  regenerateBtn.addEventListener('click', analyze);
-  downloadBtn.addEventListener('click', downloadResult);
+  btn.addEventListener('click',analyze);
+  sampleBtn.addEventListener('click',showSample);
+  clearBtn.addEventListener('click',clearAll);
+  regenerateBtn.addEventListener('click',analyze);
+  downloadBtn.addEventListener('click',downloadResult);
+
+  detailToggle.addEventListener('click',()=>{
+    detailContent.classList.toggle('on');
+    detailToggle.textContent=detailContent.classList.contains('on')?
+      '상세 보고서 닫기':'상세 보고서 보기';
+  });
 
   // 예시 데이터
-  const sampleRegulation = `## 2026 AI 메이커 부트캠프 결선 제출 규정 (S1)
+  const sampleRegulation=`## 2026 AI 메이커 부트캠프 결선 제출 규정 (S1)
 1. 제출물은 반드시 PDF 형식이어야 합니다.
 2. 제출물 파일명은 반드시 "submission.pdf"여야 합니다.
 3. 제출물은 10페이지를 초과하면 안 됩니다.
@@ -529,7 +1210,7 @@
 7. 제출 언어는 한국어여야 합니다.
 8. 제출물에는 팀원 이름을 포함해야 합니다. (권장)
 9. 제출 형식은 자유 형식입니다. (선택 가능)`;
-  const sampleSubmission = `- 파일 형식: PDF
+  const sampleSubmission=`- 파일 형식: PDF
 - 파일명: my_entry.pdf
 - 페이지 수: 12페이지
 - 표지 포함 여부: 예 (타이틀 페이지 있음)
