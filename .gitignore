@@ -31,3 +31,9 @@ index-v2-light-minimal.html
 index-v3-mono-terminal.html
 index-v4-compact-dashboard.html
 index-v5-editorial-warm.html
+
+# MABC Hermes harness roles only
+!.hermes/
+.hermes/*
+!.hermes/roles/
+!.hermes/roles/*.md
