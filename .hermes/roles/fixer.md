@@ -38,3 +38,9 @@ Debugger의 다음 정보가 있어야 한다:
 - 남은 위험
 
 테스트가 실패하면 PASS라고 하지 않는다.
+
+## 필수 Skills
+
+수정 완료 후 반드시 requesting-code-review를 실제로 사용한다.
+
+실제 diff와 변경 범위를 기준으로 review하고, 문제 발견 시 QA로 넘기기 전에 수정한다.

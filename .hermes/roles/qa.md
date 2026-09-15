@@ -41,3 +41,11 @@ mock 성공만으로 E2E PASS 처리하지 않는다.
 - Release 가능 여부
 
 실제 증거가 없으면 PASS 금지.
+
+## 필수 Skills
+
+검증 중 실패가 발생하면 systematic-debugging을 사용해 최초 실패 지점을 정리한다.
+
+최종 QA에서는 requesting-code-review 결과도 확인한다.
+
+Skill 이름만 언급하고 통과 처리하지 않는다.

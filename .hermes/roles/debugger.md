@@ -46,3 +46,12 @@
 
 원인이 확정되지 않았으면 추측하지 말고
 NEEDS_MORE_EVIDENCE 로 종료한다.
+
+## 필수 Skills
+
+작업 시작 전에 반드시 아래 Skill을 실제로 읽고 절차를 적용한다.
+
+1. codebase-inspection
+2. systematic-debugging
+
+Skill 이름만 언급하지 말고 실제 진단 절차에 적용한다.

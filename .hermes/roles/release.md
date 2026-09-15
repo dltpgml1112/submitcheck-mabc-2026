@@ -44,3 +44,9 @@ QA 결과가 명시적으로 PASS여야 한다.
 - PASS / FAIL
 
 모두 실제 production 증거로 확인해야 한다.
+
+## 필수 Skills
+
+배포 전에 반드시 sdlc-review를 실제로 사용한다.
+
+sdlc-review 결과와 QA PASS를 모두 확인한 뒤에만 production 배포를 진행한다.
